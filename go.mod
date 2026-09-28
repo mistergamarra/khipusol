@@ -1,6 +1,9 @@
 module github.com/mistergamarra/khipusol
 
 go 1.26
+// Retract v1.0.1 due to accidental tag deployment.
+retract v1.0.1
+
 
 require (
 	github.com/joho/godotenv v1.5.1
