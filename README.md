@@ -54,16 +54,17 @@ go build -o khipusol main.go
 sudo mv khipusol /usr/local/bin/
 ```
 
-## Verify installation:
+### Verify installation:
 ```bash
 # macOS / Linux
 khipusol --version
 ```
-
+![Khipuol Version](docs/assets/khipusol_version.png)
 ```bash
 # macOS / Linux
-khipusol --version
+khipusol --help
 ```
+![Khipuol Version](docs/assets/khipusol_help.png)
 ---
 
 ## 📜 License
