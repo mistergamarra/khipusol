@@ -1,2 +1,4 @@
 ./scripts/.env
 .env
+/web/node_modules/
+.idea

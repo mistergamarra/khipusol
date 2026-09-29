@@ -97,7 +97,7 @@ func ParseFlagsAndEnv() (Config, error) {
 		apiURL = os.Getenv("EXCHANGE_API_URL")
 	}
 	if apiURL == "" {
-		apiURL = "https://cdn.jsdelivr.net/gh/mistergamarra/khipusol-rates@main/rates"
+		apiURL = "https://cdn.jsdelivr.net/gh/mistergamarra/rates@main/rates"
 	}
 
 	isDebug := *debugMode
