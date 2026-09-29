@@ -1,43 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
-import {
-    Sun,
-    Upload,
-    Download,
-    RotateCcw,
-    Zap,
-    User,
-    Mail,
-    X,
-    FileSpreadsheet,
-    Calendar,
-    DollarSign
-} from 'lucide-react';
 
-// Dictionary with Peruvian Spanish & English translations
+import Header from './components/Header';
+import InputSection from './components/InputSection';
+import ResultsTable from './components/ResultsTable';
+import SingleConversionModal from './components/SingleConversionModal';
+import AuthorModal from './components/AuthorModal';
+import CalendarModal from './components/CalendarModal';
+
+// Dictionary with Peruvian Spanish & English translations (No icons/emojis in text)
 const translations = {
     es: {
-        title: "☀️ Khipusol Web",
+        title: "Khipusol",
         subtitle: "Conversión automatizada de moneda SUNAT para comprobantes y pagos en Perú.",
         quickConvert: "Conversión Unitaria",
+        calendarBtn: "Calendario",
         meetAuthor: "Conoce al Autor",
         selectCsv: "Seleccionar CSV de Pagos",
         csvHint: "Compatible con formatos CSV estándar que incluyan columnas de fecha y monto.",
         loaded: "Archivo cargado:",
         processing: "Leyendo archivo CSV...",
         processingRow: (current, total) => `Procesando fila ${current} de ${total}...`,
-        resultsTitle: "✨ Vista Previa de Resultados",
+        resultsTitle: "Vista Previa de Resultados",
         downloadBtn: "Descargar CSV",
         resetBtn: "Reiniciar",
         tableDate: "Fecha",
         tableAmount: "Monto",
-        tableRate: "Tasa SUNAT (Compra)",
-        tableConverted: "Convertido (PEN)",
-        disclaimer: "⚠️ Aviso legal: Confirme siempre los tipos de cambio oficiales directamente en el",
+        tableRateCompra: "Tasa Compra (C)",
+        tableRateVenta: "Tasa Venta (V)",
+        tableConvertedCompra: "Conv. Compra (PEN)",
+        tableConvertedVenta: "Conv. Venta (PEN)",
+        disclaimer: "Aviso legal: Confirme siempre los tipos de cambio oficiales directamente en el",
         disclaimerPortal: "portal oficial de SUNAT",
         disclaimerEnd: "para declaraciones tributarias o contables formales.",
 
-        // Single Conversion Modal
+        tabFile: "Subir Archivo CSV",
+        tabText: "Editor de Texto",
+        processTextBtn: "Procesar Texto CSV",
+        guideTitle: "Guía de Campos y Valores",
+        guideSubtitle: "Tu archivo CSV o texto debe incluir estrictamente las siguientes cabeceras y formatos:",
+
+        fieldAmount: "amount",
+        fieldAmountDesc: "Monto numérico de la transacción en moneda extranjera.",
+        fieldAmountValues: "Posibles valores: Cualquier número decimal positivo (ej: 3660.00, 150.50).",
+
+        fieldDate: "date",
+        fieldDateDesc: "Fecha en la que se realizó la operación o emisión del comprobante.",
+        fieldDateValues: "Formato requerido: DD/MM/YYYY (ej: 30/09/2022, 15/01/2026).",
+
         modalTitle: "Conversión Rápida por Pago Único",
         modalDateLabel: "Fecha del Comprobante / Pago",
         modalAmountLabel: "Monto Original (USD / Extranjera)",
@@ -47,43 +57,55 @@ const translations = {
         resDate: "Fecha:",
         resOriginal: "Monto Original:",
         resRateCompra: "Tasa SUNAT (Compra):",
-        resRateVenta: "ℹ️ Tasa informativa (Venta):",
+        resRateVenta: "Tasa informativa (Venta):",
         resConverted: "Total Convertido (Compra):",
         modalDisclaimer: "Verifica y confirma el monto oficial en la",
         sunatLinkText: "web oficial de SUNAT",
         rateNotFound: "No se encontró tasa para la fecha",
         clearForm: "Limpiar Formulario",
 
-        // Author Modal
         authorTitle: "Sobre el Creador",
         authorBio: "Creador de Khipusol, herramientas de automatización financiera y open-source para desarrolladores y contadores en Perú.",
-        emailLabel: "Correo Electrónico",
-        githubLabel: "Perfil de GitHub",
-        linkedinLabel: "Perfil de LinkedIn",
     },
     en: {
-        title: "☀️ Khipusol Web",
+        title: "Khipusol",
         subtitle: "Automated SUNAT Currency Conversion for payments and records in Peru.",
         quickConvert: "Quick Single Convert",
+        calendarBtn: "Calendar",
         meetAuthor: "Meet the Author",
         selectCsv: "Select Payments CSV",
         csvHint: "Supports standard CSV formats with date and amount columns.",
         loaded: "Loaded file:",
         processing: "Reading CSV file...",
         processingRow: (current, total) => `Processing row ${current} of ${total}...`,
-        resultsTitle: "✨ Conversion Results Preview",
+        resultsTitle: "Conversion Results Preview",
         downloadBtn: "Download CSV",
         resetBtn: "Reset",
         tableDate: "Date",
         tableAmount: "Amount",
-        tableRate: "SUNAT Rate (Compra)",
-        tableConverted: "Converted (PEN)",
-        disclaimer: "⚠️ Disclaimer: Always verify official exchange rates directly on the",
+        tableRateCompra: "Compra Rate (C)",
+        tableRateVenta: "Venta Rate (V)",
+        tableConvertedCompra: "Conv. Compra (PEN)",
+        tableConvertedVenta: "Conv. Venta (PEN)",
+        disclaimer: "Disclaimer: Always verify official exchange rates directly on the",
         disclaimerPortal: "official SUNAT portal",
         disclaimerEnd: "for formal tax or accounting records.",
 
-        // Single Conversion Modal
-        modalTitle: "⚡ Single Payment Conversion",
+        tabFile: "Upload CSV File",
+        tabText: "Text Editor",
+        processTextBtn: "Process CSV Text",
+        guideTitle: "Fields & Values Guide",
+        guideSubtitle: "Your CSV file or pasted text must strictly use these headers and formats:",
+
+        fieldAmount: "amount",
+        fieldAmountDesc: "Numeric transaction amount in foreign currency.",
+        fieldAmountValues: "Possible values: Any positive decimal number (e.g. 3660.00, 150.50).",
+
+        fieldDate: "date",
+        fieldDateDesc: "Date when the transaction or invoice was issued.",
+        fieldDateValues: "Required format: DD/MM/YYYY (e.g. 30/09/2022, 15/01/2026).",
+
+        modalTitle: "Single Payment Conversion",
         modalDateLabel: "Payment / Voucher Date",
         modalAmountLabel: "Original Amount (USD / Foreign)",
         modalPlaceholder: "e.g. 1500.00",
@@ -92,25 +114,24 @@ const translations = {
         resDate: "Date:",
         resOriginal: "Original Amount:",
         resRateCompra: "SUNAT Rate (Compra):",
-        resRateVenta: "ℹ️ Informative Rate (Venta):",
+        resRateVenta: "Informative Rate (Venta):",
         resConverted: "Converted Total (Compra):",
         modalDisclaimer: "Verify and confirm official amount on the",
         sunatLinkText: "official SUNAT website",
         rateNotFound: "Rate not found for date",
         clearForm: "Clear Form",
 
-        // Author Modal
-        authorTitle: "👨‍💻 About the Creator",
+        authorTitle: "About the Creator",
         authorBio: "Creator of Khipusol, financial automation tools, and open-source software for developers and accountants.",
-        emailLabel: "Email Address",
-        githubLabel: "GitHub Profile",
-        linkedinLabel: "LinkedIn Profile",
     }
 };
 
 export default function App() {
-    const [lang, setLang] = useState('es'); // Spanish (Peru) default
+    const [lang, setLang] = useState('es');
     const t = translations[lang];
+
+    const [inputMode, setInputMode] = useState('file');
+    const [csvText, setCsvText] = useState("amount,date\n3660.00,30/09/2022\n4400.00,31/10/2022");
 
     const [fileName, setFileName] = useState('');
     const [loading, setLoading] = useState(false);
@@ -120,6 +141,7 @@ export default function App() {
     // Modal states
     const [isSingleModalOpen, setIsSingleModalOpen] = useState(false);
     const [isAuthorModalOpen, setIsAuthorModalOpen] = useState(false);
+    const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
     // Single conversion form states
     const [singleDate, setSingleDate] = useState('');
@@ -133,13 +155,13 @@ export default function App() {
             if (e.key === 'Escape') {
                 setIsSingleModalOpen(false);
                 setIsAuthorModalOpen(false);
+                setIsCalendarModalOpen(false);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // In-memory cache for fetched monthly JSON rates
     const ratesCache = {};
 
     const fetchMonthlyRates = async (year, month) => {
@@ -257,6 +279,66 @@ export default function App() {
         setSingleResult(null);
     };
 
+    const processParsedRows = async (rows) => {
+        const updatedRows = [];
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            setStatusText(t.processingRow(i + 1, rows.length));
+
+            const dateStr = row.Date || row.date || row.FECHA || row.fecha || row.Fecha || Object.values(row)[0];
+            const parsedDate = parseDateString(dateStr);
+            let rateCompra = 0;
+            let rateVenta = 0;
+            let convertedCompra = 0;
+            let convertedVenta = 0;
+
+            const rawAmount = row.Amount || row.amount || row.MONTO || row.monto || row.Monto || Object.values(row)[1] || 0;
+            const amountVal = parseFloat(String(rawAmount).replace(/[^0-9.-]+/g, "")) || 0;
+
+            if (parsedDate) {
+                const monthlyRatesArray = await fetchMonthlyRates(parsedDate.year, parsedDate.month);
+
+                if (Array.isArray(monthlyRatesArray)) {
+                    const targetDateStr = `${parsedDate.paddedDay}/${parsedDate.month}/${parsedDate.year}`;
+
+                    const rateCompraEntry = monthlyRatesArray.find(
+                        item => item.fecPublica === targetDateStr && item.codTipo === "C"
+                    );
+                    const rateVentaEntry = monthlyRatesArray.find(
+                        item => item.fecPublica === targetDateStr && item.codTipo === "V"
+                    );
+
+                    if (rateCompraEntry && rateCompraEntry.valTipo) {
+                        rateCompra = parseFloat(rateCompraEntry.valTipo);
+                        if (rateCompra > 0) {
+                            convertedCompra = parseFloat((amountVal * rateCompra).toFixed(2));
+                        }
+                    }
+
+                    if (rateVentaEntry && rateVentaEntry.valTipo) {
+                        rateVenta = parseFloat(rateVentaEntry.valTipo);
+                        if (rateVenta > 0) {
+                            convertedVenta = parseFloat((amountVal * rateVenta).toFixed(2));
+                        }
+                    }
+                }
+            }
+
+            updatedRows.push({
+                ...row,
+                Rate_Compra: rateCompra > 0 ? rateCompra.toFixed(4) : 'N/A',
+                Rate_Venta: rateVenta > 0 ? rateVenta.toFixed(4) : 'N/A',
+                Converted_Compra_PEN: convertedCompra > 0 ? convertedCompra.toFixed(2) : 'Error/N/A',
+                Converted_Venta_PEN: convertedVenta > 0 ? convertedVenta.toFixed(2) : 'Error/N/A'
+            });
+        }
+
+        setProcessedRows(updatedRows);
+        setLoading(false);
+        setStatusText('');
+    };
+
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -269,52 +351,30 @@ export default function App() {
             header: true,
             skipEmptyLines: true,
             complete: async (results) => {
-                const rows = results.data;
-                const updatedRows = [];
-
-                for (let i = 0; i < rows.length; i++) {
-                    const row = rows[i];
-                    setStatusText(t.processingRow(i + 1, rows.length));
-
-                    const dateStr = row.Date || row.date || row.FECHA || row.fecha || row.Fecha || Object.values(row)[0];
-                    const parsedDate = parseDateString(dateStr);
-                    let rateCompra = 0;
-                    let converted = 0;
-
-                    const rawAmount = row.Amount || row.amount || row.MONTO || row.monto || row.Monto || Object.values(row)[1] || 0;
-                    const amountVal = parseFloat(String(rawAmount).replace(/[^0-9.-]+/g, "")) || 0;
-
-                    if (parsedDate) {
-                        const monthlyRatesArray = await fetchMonthlyRates(parsedDate.year, parsedDate.month);
-
-                        if (Array.isArray(monthlyRatesArray)) {
-                            const targetDateStr = `${parsedDate.paddedDay}/${parsedDate.month}/${parsedDate.year}`;
-                            const rateEntry = monthlyRatesArray.find(
-                                item => item.fecPublica === targetDateStr && item.codTipo === "C"
-                            );
-
-                            if (rateEntry && rateEntry.valTipo) {
-                                rateCompra = parseFloat(rateEntry.valTipo);
-                                if (rateCompra > 0) {
-                                    converted = parseFloat((amountVal * rateCompra).toFixed(2));
-                                }
-                            }
-                        }
-                    }
-
-                    updatedRows.push({
-                        ...row,
-                        Rate_Compra: rateCompra > 0 ? rateCompra.toFixed(4) : 'N/A',
-                        Converted_PEN: converted > 0 ? converted.toFixed(2) : 'Error/N/A'
-                    });
-                }
-
-                setProcessedRows(updatedRows);
-                setLoading(false);
-                setStatusText('');
+                await processParsedRows(results.data);
             },
             error: (err) => {
                 alert('Error parsing CSV: ' + err.message);
+                setLoading(false);
+            }
+        });
+    };
+
+    const handleTextProcess = () => {
+        if (!csvText.trim()) return;
+
+        setLoading(true);
+        setFileName('manual_input.csv');
+        setStatusText(t.processing);
+
+        Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                await processParsedRows(results.data);
+            },
+            error: (err) => {
+                alert('Error parsing text CSV: ' + err.message);
                 setLoading(false);
             }
         });
@@ -341,57 +401,26 @@ export default function App() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8">
-            {/* Top Bar for Language Switcher & Meet Author */}
-            <div className="flex justify-between items-center mb-6">
-                <button
-                    onClick={() => setIsAuthorModalOpen(true)}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-medium shadow-sm transition flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-blue-400" />
-                    {t.meetAuthor}
-                </button>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+            <Header
+                t={t}
+                lang={lang}
+                setLang={setLang}
+                onOpenAuthor={() => setIsAuthorModalOpen(true)}
+                onOpenCalendar={() => setIsCalendarModalOpen(true)}
+                onOpenSingle={() => setIsSingleModalOpen(true)}
+            />
 
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-1 flex shadow-sm">
-                    <button
-                        onClick={() => setLang('es')}
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${lang === 'es' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                        🇵🇪 ES
-                    </button>
-                    <button
-                        onClick={() => setLang('en')}
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${lang === 'en' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                        🇺🇸 EN
-                    </button>
-                </div>
-            </div>
-
-            {/* Header Section */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-slate-900 pb-6">
-                <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight mb-2 flex items-center gap-3">
-                        <Sun className="w-8 h-8 text-amber-400" />
-                        {t.title.replace('☀️ ', '')}
-                    </h1>
-                    <p className="text-slate-400 max-w-xl">{t.subtitle}</p>
-                </div>
-                <button
-                    onClick={() => setIsSingleModalOpen(true)}
-                    className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-blue-400 hover:text-blue-300 font-medium px-5 py-3 rounded-2xl shadow-lg transition flex items-center gap-2 text-sm shrink-0">
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    {t.quickConvert}
-                </button>
-            </header>
-
-            {/* Upload Box */}
-            <div className="border-2 border-dashed border-slate-700 bg-slate-900/50 hover:bg-slate-900 transition p-10 rounded-2xl text-center mb-8 shadow-xl">
-                <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" id="csv-upload" />
-                <label htmlFor="csv-upload" className="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3.5 rounded-xl shadow-lg transition">
-                    <Upload className="w-5 h-5" />
-                    {t.selectCsv}
-                </label>
-                <p className="text-sm text-slate-500 mt-3">{t.csvHint}</p>
-                {fileName && <p className="text-emerald-400 mt-2 font-medium flex items-center justify-center gap-1.5"><FileSpreadsheet className="w-4 h-4" /> {t.loaded} {fileName}</p>}
-            </div>
+            <InputSection
+                t={t}
+                inputMode={inputMode}
+                setInputMode={setInputMode}
+                csvText={csvText}
+                setCsvText={setCsvText}
+                fileName={fileName}
+                handleFileUpload={handleFileUpload}
+                handleTextProcess={handleTextProcess}
+            />
 
             {loading && (
                 <div className="text-center py-12">
@@ -400,221 +429,38 @@ export default function App() {
                 </div>
             )}
 
-            {/* Results Section */}
-            {processedRows && !loading && (
-                <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
-                    <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-                        <h2 className="text-xl font-bold text-slate-200">{t.resultsTitle}</h2>
-                        <div className="flex gap-3">
-                            <button onClick={downloadCSV} className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2">
-                                <Download className="w-4 h-4" />
-                                {t.downloadBtn}
-                            </button>
-                            <button onClick={handleReset} className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2">
-                                <RotateCcw className="w-4 h-4" />
-                                {t.resetBtn}
-                            </button>
-                        </div>
-                    </div>
+            <ResultsTable
+                t={t}
+                processedRows={processedRows}
+                downloadCSV={downloadCSV}
+                handleReset={handleReset}
+            />
 
-                    <div className="overflow-x-auto max-h-96 rounded-lg border border-slate-800">
-                        <table className="w-full text-left text-sm text-slate-300">
-                            <thead className="bg-slate-800 text-slate-200 uppercase text-xs sticky top-0">
-                            <tr>
-                                <th className="px-4 py-3">{t.tableDate}</th>
-                                <th className="px-4 py-3">{t.tableAmount}</th>
-                                <th className="px-4 py-3">{t.tableRate}</th>
-                                <th className="px-4 py-3">{t.tableConverted}</th>
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-800 bg-slate-900/50">
-                            {processedRows.map((row, idx) => (
-                                <tr key={idx} className="hover:bg-slate-800/40">
-                                    <td className="px-4 py-3">{row.Date || row.date || row.FECHA || '-'}</td>
-                                    <td className="px-4 py-3">{row.Amount || row.amount || row.MONTO || '-'}</td>
-                                    <td className="px-4 py-3 text-blue-400 font-mono">{row.Rate_Compra}</td>
-                                    <td className="px-4 py-3 text-emerald-400 font-mono font-bold">{row.Converted_PEN}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+            <SingleConversionModal
+                isOpen={isSingleModalOpen}
+                onClose={() => setIsSingleModalOpen(false)}
+                t={t}
+                singleDate={singleDate}
+                setSingleDate={setSingleDate}
+                singleAmount={singleAmount}
+                setSingleAmount={setSingleAmount}
+                singleLoading={singleLoading}
+                singleResult={singleResult}
+                handleSingleConvert={handleSingleConvert}
+                handleSingleReset={handleSingleReset}
+            />
 
-            {/* Single Conversion Modal (Spacious & Airy Layout) */}
-            {isSingleModalOpen && (
-                <div
-                    onClick={() => setIsSingleModalOpen(false)}
-                    className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-8 shadow-2xl relative space-y-6">
+            <CalendarModal
+                isOpen={isCalendarModalOpen}
+                onClose={() => setIsCalendarModalOpen(false)}
+                lang={lang}
+            />
 
-                        {/* Modal Header */}
-                        <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                            <h3 className="text-xl font-bold text-slate-200 flex items-center gap-2.5">
-                                <Zap className="w-5 h-5 text-amber-400" />
-                                {t.modalTitle}
-                            </h3>
-                            <button
-                                onClick={() => setIsSingleModalOpen(false)}
-                                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Form Inputs with Generous Spacing */}
-                        <form onSubmit={handleSingleConvert} className="space-y-5">
-                            <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-blue-400" />
-                                    {t.modalDateLabel}
-                                </label>
-                                <input
-                                    type="date"
-                                    value={singleDate}
-                                    onChange={(e) => setSingleDate(e.target.value)}
-                                    required
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-slate-200 focus:outline-none focus:border-blue-500 text-sm font-medium"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-2">
-                                    <DollarSign className="w-4 h-4 text-emerald-400" />
-                                    {t.modalAmountLabel}
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder={t.modalPlaceholder}
-                                    value={singleAmount}
-                                    onChange={(e) => setSingleAmount(e.target.value)}
-                                    required
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-slate-200 focus:outline-none focus:border-blue-500 text-sm font-medium"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3.5 rounded-2xl transition shadow-lg text-sm">
-                                    {singleLoading ? t.modalLoading : t.modalSubmit}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSingleReset}
-                                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-3.5 rounded-2xl transition font-medium flex items-center justify-center"
-                                    title={t.clearForm}>
-                                    <RotateCcw className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </form>
-
-                        {/* Modal Results Display with Airy Padding */}
-                        {singleResult && (
-                            <div className="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-4">
-                                {singleResult.error ? (
-                                    <p className="text-red-400 text-sm text-center py-2">{singleResult.error}</p>
-                                ) : (
-                                    <>
-                                        <div className="space-y-3 text-sm">
-                                            <div className="flex justify-between text-slate-400">
-                                                <span>{t.resDate}</span>
-                                                <span className="text-slate-200 font-medium capitalize">{singleResult.date}</span>
-                                            </div>
-                                            <div className="flex justify-between text-slate-400">
-                                                <span>{t.resOriginal}</span>
-                                                <span className="text-slate-200 font-medium">${singleResult.amount}</span>
-                                            </div>
-                                            <div className="flex justify-between text-slate-400">
-                                                <span>{t.resRateCompra}</span>
-                                                <span className="text-blue-400 font-mono font-semibold">{singleResult.rateCompra}</span>
-                                            </div>
-                                            <div className="flex justify-between text-slate-500 text-xs">
-                                                <span>{t.resRateVenta}</span>
-                                                <span className="font-mono">{singleResult.rateVenta}</span>
-                                            </div>
-                                            <div className="border-t border-slate-800/80 pt-3 flex justify-between font-bold">
-                                                <span className="text-slate-200">{t.resConverted}</span>
-                                                <span className="text-emerald-400 font-mono text-lg">S/. {singleResult.converted}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Confirmation disclaimer link */}
-                                        <div className="border-t border-slate-900 pt-3 text-center text-xs text-slate-500 leading-relaxed">
-                                            {t.modalDisclaimer}{' '}
-                                            <a
-                                                href="https://e-consulta.sunat.gob.pe/cl-at-ittipcam/tcS01Alias"
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-blue-400 underline hover:text-blue-300 font-medium">
-                                                {t.sunatLinkText}
-                                            </a>.
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Meet the Author Modal */}
-            {isAuthorModalOpen && (
-                <div
-                    onClick={() => setIsAuthorModalOpen(false)}
-                    className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-8 shadow-2xl relative text-center space-y-5">
-                        <button
-                            onClick={() => setIsAuthorModalOpen(false)}
-                            className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition">
-                            <X className="w-5 h-5" />
-                        </button>
-
-                        <div className="w-16 h-16 bg-blue-600/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/30">
-                            <User className="w-8 h-8" />
-                        </div>
-
-                        <div>
-                            <h3 className="text-xl font-bold text-slate-200 mb-1.5">{t.authorTitle}</h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">{t.authorBio}</p>
-                        </div>
-
-                        <div className="space-y-3 pt-1">
-                            <a
-                                href="mailto:mister.gamarra@gmail.com"
-                                className="flex items-center gap-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-4 py-3 rounded-xl text-slate-300 hover:text-white transition text-xs font-medium">
-                                <Mail className="w-4 h-4 text-blue-400 shrink-0" />
-                                <span className="truncate">mister.gamarra@gmail.com</span>
-                            </a>
-                            <a
-                                href="https://github.com/mistergamarra"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-4 py-3 rounded-xl text-slate-300 hover:text-white transition text-xs font-medium">
-                                <svg className="w-4 h-4 fill-current text-purple-400 shrink-0" viewBox="0 0 24 24">
-                                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02_0 0024 12c0-6.63-5.37-12-12-12z"/>
-                                </svg>
-                                <span>github.com/mistergamarra</span>
-                            </a>
-                            <a
-                                href="https://linkedin.com/in/arnold-gamarra"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 px-4 py-3 rounded-xl text-slate-300 hover:text-white transition text-xs font-medium">
-                                <svg className="w-4 h-4 fill-current text-cyan-400 shrink-0" viewBox="0 0 24 24">
-                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                </svg>
-                                <span>LinkedIn Profile</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AuthorModal
+                isOpen={isAuthorModalOpen}
+                onClose={() => setIsAuthorModalOpen(false)}
+                t={t}
+            />
 
             {/* Disclaimer */}
             <footer className="mt-12 text-center text-xs text-slate-500 border-t border-slate-900 pt-6">
